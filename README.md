@@ -14,7 +14,7 @@
 
   <img src="https://img.shields.io/badge/Status-In%20Progress-orange" />
 
-  <img src="https://img.shields.io/github/stars/aliiashraf777/YOUR-DASHBOARD-REPO?style=social" />
+  <img src="https://img.shields.io/github/stars/aliiashraf777/filernowfull-dashboard?style=social" />
 
 </p>
 
