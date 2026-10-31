@@ -1,36 +1,179 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚀 FilerNow Dashboard – Personal Finance & Tax Workspace
 
-## Getting Started
+<p align="center">
 
-First, run the development server:
+  <img src="https://img.shields.io/badge/Next.js-14%2B-black?logo=nextdotjs" />
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" />
+
+  <img src="https://img.shields.io/badge/TypeScript-TS-3178C6?logo=typescript&logoColor=white" />
+
+  <img src="https://img.shields.io/badge/TailwindCSS-Design%20Tokens-38B2AC?logo=tailwind-css" />
+
+  <img src="https://img.shields.io/badge/Recharts-Charts-22B5BF" />
+
+  <img src="https://img.shields.io/badge/Status-In%20Progress-orange" />
+
+  <img src="https://img.shields.io/github/stars/aliiashraf777/YOUR-DASHBOARD-REPO?style=social" />
+
+</p>
+
+## 📌 Overview
+
+The FilerNow Dashboard is the logged-in product side of FilerNow, built as a separate Next.js app from the public website.
+
+It gives individual users one place to track expenses, understand spending trends, and keep an eye on debts. It is designed around a personal user, not an enterprise team.
+
+<p align="center">
+
+  <img src="./public/assets/dashboard-home.png" />
+
+</p>
+
+## 🎯 Problem
+
+- ❌ Personal finance tools that feel like corporate SaaS (approvals, teams, employees)
+
+- ❌ Spending data with no clear trend or category picture
+
+- ❌ Inconsistent UI when each page invents its own styles
+
+- ❌ Dashboards built page-by-page with no shared design foundation
+
+## 💡 Solution
+
+- ✅ Token-based design system built before the first feature
+
+- ✅ Expense Manager with derived stats, trends, and category breakdown
+
+- ✅ Logic isolated in a dedicated store hook, not scattered across components
+
+- ✅ Minimal, consistent UI language for a personal-user product
+
+## ⚡ Key Features
+
+- 💸 Expense Manager: add, edit, and categorize expenses
+
+- 🗂️ Category manager dialog
+
+- 📋 Sortable and filterable expenses table
+
+- 📈 Trend chart (six months of seeded data)
+
+- 🥧 Category breakdown
+
+- 🧾 Debt summary card
+
+- 💾 localStorage persistence with derived stats
+
+- 🎨 Shared CSS token architecture across the whole dashboard
+
+## 🛠 Tech Stack
+
+- ⚛️ Next.js (App Router) + React
+
+- 🟦 TypeScript
+
+- 🎨 Tailwind CSS with a custom token layer
+
+- 🧩 Radix UI / shadcn primitives
+
+- 📋 React Hook Form + Zod
+
+- 📊 Recharts
+
+- 🎯 Lucide React
+
+## 🧠 Engineering Decisions
+
+- **Tokens first:** the CSS is split into `globals.css`, `theme.css`, `base.css`, `utilities.css`, and `components.css`, so no page ever hardcodes a color.
+
+- **One store hook for the module:** `useExpenseManagerStore` owns persistence and derived stats (totals, trends, breakdowns). Components just render.
+
+- **Derived, not stored:** stats are computed from the expense list, never kept as a second copy that can drift.
+
+- **Per-repo token discipline:** design tokens are scoped to each repo, so conventions from the public site are verified before they're reused here.
+
+- **Honest data layer:** dummy data is clearly seeded and isolated, ready to swap for real API calls.
+
+## 📈 Results / Impact
+
+- 🚀 A reusable design foundation for every future dashboard module
+
+- 📊 Full expense workflow: add, categorize, sort, filter, visualize
+
+- 🧱 UI logic separated from state logic
+
+- 🎯 Ready for backend integration without a UI rewrite
+
+## 📸 Project Preview
+
+### 🖥️ Dashboard
+
+![Desktop](./public/assets/dashboard-home.png)
+
+### 📱 Khata
+
+![Mobile](./public/assets/dashboard-khata.png)
+
+## 📂 Folder Structure
+
+```text
+app/
+components/
+├── expense-manager/
+├── ui/
+hooks/
+data/
+lib/
+styles/
+├── globals.css
+├── theme.css
+├── base.css
+├── utilities.css
+└── components.css
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ⚙️ Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+git clone https://github.com/aliiashraf777/filernowfull-dashboard.git
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+cd filernowfull-dashboard
 
-## Learn More
+npm install
 
-To learn more about Next.js, take a look at the following resources:
+npm run dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🔗 Live Demo
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+[LIVE_URL](https://filernowfull-dashboard.vercel.app/user-dashboard)
 
-## Deploy on Vercel
+## 💻 Repository
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+[https://github.com/aliiashraf777/YOUR-DASHBOARD-REPO](https://github.com/aliiashraf777/filernowfull-dashboard)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🚀 Future Improvements
+
+- Replace seeded data with real API calls
+
+- Digital Khata module (daily, business, udhaar, party)
+
+- Authentication-gated routes
+
+- Export and reporting
+
+## 🧠 What I Learned
+
+- Building a design system before building features
+
+- Separating state logic from presentation
+
+- Scoping design tokens per repo
+
+- Designing for a personal user, not a corporate one
+
+## ⭐ Support
+
+Give it a star if you like it ⭐
