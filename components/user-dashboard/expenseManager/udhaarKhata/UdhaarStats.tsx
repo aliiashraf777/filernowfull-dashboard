@@ -1,9 +1,12 @@
+// dashboard\components\user-dashboard\expenseManager\udhaarKhata\UdhaarStats.tsx
+// Colours now follow gave = red and got = green. The cards keep their component props.
+
 "use client";
 import { useMemo } from "react";
 import { CircleDollarSign, ArrowDownCircle, ArrowUpCircle, CheckCircle2 } from "lucide-react";
 import ExpenseStatCard from "../expenseStats/ExpensesStatCard";
 import { exportEntriesToCsv } from "@/lib/utils/exportCsv";
-import { debtBalances, debtTotals } from "@/lib/utils/debt";
+import { udhaarSummary } from "@/lib/utils/udhaarStats";
 import { IExpenseEntry, ICategory, IExpenseStatItem, KHATA_LABELS } from "@/types/expenseManagerTy";
 
 const pk = (n: number) => `PKR ${n.toLocaleString("en-PK")}`;
@@ -11,30 +14,31 @@ const pk = (n: number) => `PKR ${n.toLocaleString("en-PK")}`;
 export default function UdhaarStats({ debtEntries, categories, onCtaClick, onView }: {
     debtEntries: IExpenseEntry[]; categories: ICategory[]; onCtaClick: () => void; onView: () => void;
 }) {
-    const { get, give, settled } = useMemo(() => {
-        const b = debtBalances(debtEntries);
-        const { youWillGet, youWillGive } = debtTotals(b);
-        return { get: youWillGet, give: youWillGive, settled: [...b.values()].filter((v) => v === 0).length };
-    }, [debtEntries]);
-    const net = get - give;
+    const { current, net, get, give, settled } = useMemo(() => udhaarSummary(debtEntries), [debtEntries]);
+    const label = "vs last month";
 
     const items: (IExpenseStatItem & { ctaLabel?: string })[] = [
         {
-            id: "net", title: "Net Udhaar", value: pk(Math.abs(net)), trendDirection: net >= 0 ? "up" : "down", trendPercent: 0,
-            trendLabel: net > 0 ? "aap ko milenge" : net < 0 ? "aap ko dene hain" : "hisaab barabar",
-            icon: CircleDollarSign, chip: "red", isPositive: net >= 0, ctaLabel: KHATA_LABELS.debt.verb
+            // signed: a minus means you owe more than you are owed
+            id: "net", title: "Net Udhaar", value: `${current.net < 0 ? "-" : ""}${pk(Math.abs(current.net))}`,
+            trendDirection: net.direction, trendPercent: net.percent, trendLabel: label,
+            icon: CircleDollarSign, chip: "purple", isPositive: net.direction === "up", ctaLabel: KHATA_LABELS.debt.verb
         },
         {
-            id: "get", title: "Aap ko milenge", value: pk(get), trendDirection: "up", trendPercent: 0, trendLabel: "you will get",
-            icon: ArrowUpCircle, chip: "purple", isPositive: true
+            id: "get", title: "Aap ko milenge", value: pk(current.get),
+            trendDirection: get.direction, trendPercent: get.percent, trendLabel: label,
+            icon: ArrowUpCircle, chip: "red", isPositive: get.direction === "up"
         },
         {
-            id: "give", title: "Aap ko dene hain", value: pk(give), trendDirection: "down", trendPercent: 0, trendLabel: "you will give",
-            icon: ArrowDownCircle, chip: "blue", isPositive: false
+            // owing more is bad news, so "down" is the good direction here
+            id: "give", title: "Aap ko dene hain", value: pk(current.give),
+            trendDirection: give.direction, trendPercent: give.percent, trendLabel: label,
+            icon: ArrowDownCircle, chip: "green", isPositive: give.direction === "down"
         },
         {
-            id: "settled", title: "Settled parties", value: `${settled}`, trendDirection: "up", trendPercent: 0, trendLabel: "clear ho chuke",
-            icon: CheckCircle2, chip: "green", isPositive: true
+            id: "settled", title: "Settled parties", value: `${current.settled}`,
+            trendDirection: settled.direction, trendPercent: settled.percent, trendLabel: label,
+            icon: CheckCircle2, chip: "blue", isPositive: settled.direction === "up"
         },
     ];
 

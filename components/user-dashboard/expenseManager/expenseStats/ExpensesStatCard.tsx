@@ -2,16 +2,27 @@
 
 "use client";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { MoreHorizontal, ArrowUp, ArrowDown, Eye, Download, Pencil } from "lucide-react";
+import { MoreHorizontal, ArrowUp, ArrowDown, Minus, Eye, Download, Pencil } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { IExpenseStatItem, StatChipVariant } from "@/types/expenseManagerTy";
 
-const chipStyles: Record<StatChipVariant, string> = {
-  green: "bg-chip-green-bg text-chip-green",
-  blue: "bg-chip-blue-bg text-chip-blue",
-  purple: "bg-chip-purple-bg text-chip-purple",
-  red: "bg-chip-red-bg text-chip-red",
+// Same look as the mobile cards and the Party tiles: a very light tint, a thin 25% border, white pills inside.
+const cardTone: Record<StatChipVariant, string> = {
+  green: "bg-success-bg border-chip-green/25",
+  blue: "bg-info-bg border-chip-blue/25",
+  purple: "bg-chip-purple-bg/40 border-chip-purple/25",
+  red: "bg-danger-bg border-chip-red/25",
 };
+
+const iconTone: Record<StatChipVariant, string> = {
+  green: "text-chip-green",
+  blue: "text-chip-blue",
+  purple: "text-chip-purple",
+  red: "text-chip-red",
+};
+
+/** none = no add action, pencil = icon next to the amount, button = "+ Add ..." button, both = pencil and button. */
+export type StatCtaVariant = "none" | "pencil" | "button" | "both";
 
 interface ExpenseStatCardProps {
   item: IExpenseStatItem;
@@ -19,24 +30,33 @@ interface ExpenseStatCardProps {
   onExport: () => void;
   ctaLabel?: string;
   onCtaClick?: () => void;
+  ctaVariant?: StatCtaVariant;
 }
 
-export default function ExpenseStatCard({ item, onView, onExport, ctaLabel, onCtaClick }: ExpenseStatCardProps) {
+export default function ExpenseStatCard({ item, onView, onExport, ctaLabel, onCtaClick, ctaVariant = "both" }: ExpenseStatCardProps) {
   const Icon = item.icon;
+  // 0% = no change (or nothing to compare against): neutral grey, never green/red
+  const flat = item.trendPercent === 0;
+  // an add action only exists when the caller gave us a handler
+  const showPencil = !!onCtaClick && (ctaVariant === "pencil" || ctaVariant === "both");
+  const showButton = !!onCtaClick && !!ctaLabel && (ctaVariant === "button" || ctaVariant === "both");
 
   return (
     <div
-      className="flex flex-col gap-brand-8 min-h-[105px] rounded-brand-12 border border-border-clr bg-white p-brand-12 cursor-pointer group default-transition hover:shadow-card-hover hover:-translate-y-0.5"
+      className={cn(
+        "flex flex-col gap-brand-8 min-h-[105px] rounded-brand-12 border p-brand-12 cursor-pointer group default-transition hover:shadow-card-hover hover:-translate-y-0.5",
+        cardTone[item.chip]
+      )}
       onClick={onView}
     >
       <div className="flex items-center justify-between">
 
         {/* header title & 3dots dropdown */}
         <div className="flex items-center gap-brand-8">
-          <span className={cn("flex h-6 w-6 shrink-0 items-center justify-center rounded-brand-8 group-hover:scale-110 default-transition", chipStyles[item.chip])}>
+          <span className={cn("flex h-6 w-6 shrink-0 items-center justify-center rounded-brand-8 bg-white shadow-card group-hover:scale-110 default-transition", iconTone[item.chip])}>
             <Icon size={14} strokeWidth={2} />
           </span>
-          <span className="para-tiny text-text-secondary-muted">{item.title}</span>
+          <span className="para-tiny text-text-secondary">{item.title}</span>
         </div>
 
         {/* 3dots dropdown */}
@@ -77,37 +97,43 @@ export default function ExpenseStatCard({ item, onView, onExport, ctaLabel, onCt
       </div>
 
       <div className="flex flex-col justify-between gap-1.25">
-        {/* prices */}
+        {/* amount (+ pencil) */}
         <div className="flex items-center gap-3">
           <span className="heading-h6 text-sm leading-tight text-text-dark group-hover:text-primary default-transition">
             {item.value}
           </span>
-          <Pencil size={13}
-            onClick={(e) => { e.stopPropagation(); onCtaClick?.(); }}
-          />
+          {showPencil && (
+            <button
+              type="button"
+              aria-label={ctaLabel ?? "Add entry"}
+              onClick={(e) => { e.stopPropagation(); onCtaClick?.(); }}
+              className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-white text-primary shadow-card default-transition hover:bg-primary hover:text-white"
+            >
+              <Pencil size={13} />
+            </button>
+          )}
         </div>
 
-        {/* stats & cta */}
+        {/* trend & cta */}
         <div className="flex items-center justify-between gap-brand-8">
           <div className="flex items-center gap-1.5">
             <span className={cn(
-              "flex items-center gap-0.5 rounded-full px-1.5 py-0.5 para-tiny font-medium",
-              item.isPositive ? "bg-success-bg text-success" : "bg-danger-bg text-danger"
+              "flex items-center gap-0.5 rounded-full bg-white px-1.5 py-0.5 para-tiny font-medium",
+              flat ? "text-text-secondary-muted" : item.isPositive ? "text-success" : "text-danger"
             )}>
-              {item.trendDirection === "up" ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
+              {flat ? <Minus size={11} /> : item.trendDirection === "up" ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
               {item.trendPercent}%
             </span>
-            
-            <span className="para-tiny text-text-secondary-muter">{item.trendLabel}</span>
+
+            <span className="para-tiny text-text-secondary-muted">{item.trendLabel}</span>
           </div>
 
-          {ctaLabel && (
+          {showButton && (
             <button
               onClick={(e) => { e.stopPropagation(); onCtaClick?.(); }}
-              className="self-end rounded-brand-8 bg-page-bg px-2 py-1.5 para-tiny font-medium text-primary default-transition hover:bg-primary hover:text-white"
+              className="self-end rounded-brand-8 bg-white px-2 py-1.5 para-tiny font-medium text-primary default-transition hover:bg-primary hover:text-white"
             >
               + {ctaLabel}
-              {/* <Pencil size={14} /> */}
             </button>
           )}
         </div>

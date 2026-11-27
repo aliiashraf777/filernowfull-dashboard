@@ -126,7 +126,8 @@ export default function DebtActivityChart({ entries }: { entries: IExpenseEntry[
                         />
                         <Bar
                             dataKey="liya"
-                            fill="var(--status-info)"
+                            // fill="var(--status-info)"
+                            fill="var(--status-success)"
                             radius={[4, 4, 0, 0]}
                             maxBarSize={24}
                             name="liya"
@@ -142,10 +143,12 @@ export default function DebtActivityChart({ entries }: { entries: IExpenseEntry[
                 </ResponsiveContainer>
             </div>
             <div className="flex justify-center gap-brand-12 border-t border-border-clr/85 pt-brand-8">
+                {/* legend dot */}
                 <span className="flex items-center gap-1.5 para-tiny font-medium text-text-secondary-muted">
                     <span
                         className="h-1.5 w-1.5 rounded-full"
-                        style={{ backgroundColor: "var(--status-info)" }}
+                        // style={{ backgroundColor: "var(--status-info)" }}
+                        style={{ backgroundColor: "var(--status-success)" }}
                     />
                     Udhaar Liya
                 </span>

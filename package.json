@@ -28,6 +28,7 @@
     "zod": "^4.6.2"
   },
   "devDependencies": {
+    "@ngrok/nextjs": "^0.2.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

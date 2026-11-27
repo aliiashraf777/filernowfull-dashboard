@@ -15,6 +15,19 @@ export function debtSign(e: Pick<IExpenseEntry, "kind" | "categoryId">): 1 | -1 
     return t ? DEBT_TYPE_META[t].sign : 0;
 }
 
+/**
+ * Cash effect of an entry: 1 = money in, -1 = money out, 0 = none.
+ * Udhaar: borrowing or being repaid brings cash in, lending or repaying sends it out,
+ * and "maaf" (forgiven) moves no cash. Example: "liya" -> 1, "diya" -> -1, "diya_maaf" -> 0.
+ */
+export function cashFlow(e: Pick<IExpenseEntry, "kind" | "categoryId">): 1 | -1 | 0 {
+    if (e.kind === "income") return 1;
+    if (e.kind === "expense") return -1;
+    const type = DEBT_CATEGORY_TYPE[e.categoryId];
+    if (!type || type === "liya_maaf" || type === "diya_maaf") return 0;
+    return debtSign(e) < 0 ? 1 : -1; // ledger sign -1 (you owe more / they owe less) = cash in
+}
+
 export const debtLabel = (categoryId: string) =>
     DEBT_TYPE_META[DEBT_CATEGORY_TYPE[categoryId]]?.label ?? "Udhaar";
 

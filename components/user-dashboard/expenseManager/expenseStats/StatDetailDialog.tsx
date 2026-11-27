@@ -6,7 +6,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 import { X } from "lucide-react";
 import { buildTrend, buildDebtTrend, weekKey } from "@/lib/utils/trend";
-import { debtSign } from "@/lib/utils/debt";
+import { cashFlow, debtSign } from "@/lib/utils/debt";
 import { IExpenseEntry, ICategory, EntryKind } from "@/types/expenseManagerTy";
 import { KHATA_LABELS } from "@/types/expenseManagerTy";
 
@@ -39,6 +39,14 @@ const GRAIN_CONFIG = {
         keyFn: (d: string) => d.slice(0, 7),
         limit: 6
     }
+};
+
+const amountView = (e: IExpenseEntry) => {
+    const flow = cashFlow(e);
+    return {
+        sign: flow > 0 ? "+" : flow < 0 ? "-" : "",
+        tone: flow > 0 ? "text-success" : flow < 0 && e.kind === "debt" ? "text-danger" : "text-text-dark",
+    };
 };
 
 export default function StatDetailDialog({ kind, entries, categories, onClose }: StatDetailDialogProps) {
@@ -141,11 +149,8 @@ export default function StatDetailDialog({ kind, entries, categories, onClose }:
                                         {catLabel(e.categoryId)} · {new Date(e.date).toLocaleDateString("en-GB")}
                                     </p>
                                 </div>
-                                {/* <span className={`para-tiny font-semibold ${e.kind === "income" ? "text-success" : "text-text-dark"}`}>
-                                    {e.kind === "income" ? "+" : "-"}PKR {e.amount.toLocaleString("en-PK")}
-                                </span> */}
-                                <span className={`para-tiny font-semibold ${(e.kind === "income" || debtSign(e) < 0) ? "text-success" : "text-text-dark"}`}>
-                                    {(e.kind === "income" || debtSign(e) < 0) ? "+" : "-"}PKR {e.amount.toLocaleString("en-PK")}
+                                <span className={`para-tiny font-semibold ${amountView(e).tone}`}>
+                                    {amountView(e).sign}PKR {e.amount.toLocaleString("en-PK")}
                                 </span>
                             </div>
                         ))}

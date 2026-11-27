@@ -13,17 +13,22 @@ import { EntryKind, FilterTab, IExpenseEntry } from "@/types/expenseManagerTy";
 import { useExpenseManagerStore } from "@/hooks/useExpenseManagerStore";
 import StatDetailDialog from "@/components/user-dashboard/expenseManager/expenseStats/StatDetailDialog";
 import ExpensesStats from "@/components/user-dashboard/expenseManager/expenseStats/ExpensesStats";
+import StatsToggle from "@/components/user-dashboard/expenseManager/expenseStats/StatsToggle";
 import DebtSummaryCardV2 from "@/components/user-dashboard/expenseManager/debtCard/DebtSummaryCardV2";
 import NewEntryMenu from "@/components/user-dashboard/expenseManager/expenseStats/NewEntryMenu";
 import AdvancedExpenseWorkspaceV2 from "@/components/user-dashboard/expenseManager/overview/AdvanceExpenseWorkspaceV2";
 import KhataPageHeader from "@/components/user-dashboard/expenseManager/header/KhataPageHeader";
 import { DIGITAL_KHATA_ROUTES } from "@/data/user-dashboard/digitalKhata";
 
+/** false = the chart rows start hidden behind the "View stats" strip (same as the mobile app). */
+const SHOW_STATS_BY_DEFAULT = false;
+
 export default function ExpenseManagerPage() {
     const store = useExpenseManagerStore();
     const [editingEntry, setEditingEntry] = useState<IExpenseEntry | null>(null);
     const [tableFilter, setTableFilter] = useState<FilterTab>("all");
     const [statDialogKind, setStatDialogKind] = useState<EntryKind | "all" | null>(null);
+    const [showStats, setShowStats] = useState(SHOW_STATS_BY_DEFAULT);
 
     const debtEntries = store.entries.filter((e) => e.kind === "debt");
 
@@ -86,36 +91,38 @@ export default function ExpenseManagerPage() {
                 onSaved={(values) => store.addEntry(values)}
             /> */}
 
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-                <TrendChart
-                    title="Activity"
-                    dataByGranularity={{
-                        day: store.stats.dailyTrend,
-                        week: store.stats.weeklyTrend,
-                        month: store.stats.monthlyTrend
-                    }}
-                    defaultGranularity="week"
-                />
-                {/* <DebtSummaryCardV2
-                    debtEntries={debtEntries}
-                    onMakePayment={store.makeDebtPayment}
-                /> */}
-                <DebtSummaryCardV2 debtEntries={debtEntries} parties={store.parties} />
-            </div>
+            <StatsToggle open={showStats} onToggle={() => setShowStats((v) => !v)} />
 
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                <CategoryBreakdown data={store.stats.categoryBreakdown} />
-                <TrendChart
-                    title="Expenses by Period"
-                    dataByGranularity={{
-                        day: store.stats.dailyTrend,
-                        week: store.stats.weeklyTrend,
-                        month: store.stats.monthlyTrend
-                    }}
-                    variant="pie"
-                    defaultGranularity="month"
-                />
-            </div>
+            {showStats && (
+                <>
+                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+                        <TrendChart
+                            title="Activity"
+                            dataByGranularity={{
+                                day: store.stats.dailyTrend,
+                                week: store.stats.weeklyTrend,
+                                month: store.stats.monthlyTrend
+                            }}
+                            defaultGranularity="week"
+                        />
+                        <DebtSummaryCardV2 debtEntries={debtEntries} parties={store.parties} />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                        <CategoryBreakdown data={store.stats.categoryBreakdown} />
+                        <TrendChart
+                            title="Expenses by Period"
+                            dataByGranularity={{
+                                day: store.stats.dailyTrend,
+                                week: store.stats.weeklyTrend,
+                                month: store.stats.monthlyTrend
+                            }}
+                            variant="pie"
+                            defaultGranularity="month"
+                        />
+                    </div>
+                </>
+            )}
 
             <ExpensesTable
                 entries={store.entries}

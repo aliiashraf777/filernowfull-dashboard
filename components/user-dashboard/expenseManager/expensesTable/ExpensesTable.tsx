@@ -10,6 +10,7 @@ import { cn } from "@/lib/cn";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { exportToCsv, exportToPdf, exportToXlsx } from "@/lib/utils/exportTransactionsData";
 import { useExpenseManagerStore } from "@/hooks/useExpenseManagerStore";
+import { cashFlow } from "@/lib/utils/debt";
 
 type FilterTab = "all" | EntryKind;
 
@@ -36,11 +37,22 @@ function formatCurrency(v: number) {
   return `PKR ${v.toLocaleString("en-PK")}`;
 }
 
+// Cash effect: green + money in, red - money you gave out on udhaar, plain - for expenses, no sign when no cash moves.
+function AmountCell({ entry }: { entry: IExpenseEntry }) {
+  const flow = cashFlow(entry);
+  const tone = flow > 0 ? "text-success" : flow < 0 && entry.kind === "debt" ? "text-danger" : "text-text-secondary";
+  return (
+    <td className={cn("px-brand-12 py-brand-8 text-right para-tiny font-semibold", tone)}>
+      {flow > 0 ? "+" : flow < 0 ? "-" : ""}{formatCurrency(entry.amount)}
+    </td>
+  );
+}
+
 export default function ExpensesTable({
   entries, categories, sortField, sortDirection, onSort, onDelete, onEdit, activeFilter, onFilterChange, showTypeFilters = true
 }: ExpensesTableProps) {
   const { parties } = useExpenseManagerStore();
-  const PAGE_SIZE = 8;
+  const PAGE_SIZE = 10;
   const [page, setPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<IExpenseEntry | null>(null);
 
@@ -136,9 +148,10 @@ export default function ExpensesTable({
                   </td>
                   <td className="px-brand-12 py-brand-8 para-tiny text-text-secondary">{getCategoryLabel(entry.categoryId)}</td>
                   <td className="px-brand-12 py-brand-8 para-tiny text-text-secondary-muted">{new Date(entry.date).toLocaleDateString("en-GB")}</td>
-                  <td className={cn("px-brand-12 py-brand-8 text-right para-tiny font-semibold", entry.kind === "income" ? "text-success" : "text-text-secondary")}>
+                  {/* <td className={cn("px-brand-12 py-brand-8 text-right para-tiny font-semibold", entry.kind === "income" ? "text-success" : "text-text-secondary")}>
                     {entry.kind === "income" ? "+" : "-"}{formatCurrency(entry.amount)}
-                  </td>
+                  </td> */}
+                  <AmountCell entry={entry} />
                   <td className="px-brand-12 py-brand-8">
                     {/* Row is now static — no inline confirm state, so it never resizes */}
                     <div className="flex items-center justify-end gap-2">
