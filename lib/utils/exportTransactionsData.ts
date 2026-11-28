@@ -32,6 +32,12 @@ export function exportToXlsx(entries: IExpenseEntry[], categories: ICategory[], 
   XLSX.writeFile(wb, filename);
 }
 
+// colour of the amount: green money in, red money out, ink when no cash moves
+const flowColor = (e: IExpenseEntry) => {
+  const flow = cashFlow(e);
+  return flow > 0 ? GREEN : flow < 0 ? BRAND : INK;
+};
+
 // "+Rs 5,000" money in, "-Rs 5,000" money out, no sign when no cash moves (forgiven udhaar)
 const signed = (e: IExpenseEntry) => {
   const flow = cashFlow(e);
@@ -66,22 +72,16 @@ export function exportToPdf(entries: IExpenseEntry[], categories: ICategory[], f
   autoTable(doc, {
     startY: y + 16,
     head: [HEADER],
-    body: rows(entries, categories, parties).map((r, i) => r.map((v, c) => (c === 5 ? signed(entries[i]) : String(v)))),
+    body: rows(entries, categories, parties).map((r, i) =>
+      r.map((v, c) => (c === 5 ? { content: signed(entries[i]), styles: { textColor: flowColor(entries[i]) } } : String(v)))
+    ),
     theme: "striped",
     margin: { left: 40, right: 40, bottom: 50 },
     styles: { fontSize: 8.5, cellPadding: 5, textColor: INK },
     headStyles: { fillColor: INK, textColor: 255, fontStyle: "bold" },
     alternateRowStyles: { fillColor: [249, 250, 251] },
     columnStyles: { 5: { halign: "right", fontStyle: "bold" } },
-    didParseCell: (d) => {
-      if (d.column.index !== 5) return;
-      if (d.section === "head") { d.cell.styles.halign = "right"; return; }
-      if (d.section === "body") {
-        const e = entries[d.row.index];
-        const flow = e ? cashFlow(e) : 0;
-        d.cell.styles.textColor = flow > 0 ? GREEN : flow < 0 ? BRAND : INK;
-      }
-    },
+    didParseCell: (d) => { if (d.column.index === 5 && d.section === "head") d.cell.styles.halign = "right"; },
   });
   addFooters(doc).save(filename);
 }

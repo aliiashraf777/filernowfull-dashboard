@@ -1,15 +1,17 @@
 // components/user-dashboard/expenseManager/ExpensesStats.tsx
+
 "use client";
 
-import { Wallet, TrendingUp, TrendingDown, CircleDollarSign, Pencil } from "lucide-react";
+import { useState } from "react";
+import { Wallet, TrendingUp, TrendingDown, CircleDollarSign } from "lucide-react";
 import { IExpenseEntry, ICategory, EntryKind, IExpenseStatItem, KHATA_LABELS, ICard, MAX_CARDS } from "@/types/expenseManagerTy";
 import { exportEntriesToCsv } from "@/lib/utils/exportCsv";
 import ExpenseStatCard from "./ExpensesStatCard";
-import { useState } from "react";
 import CardFormDialog from "../cardsManager/CardFormDialog";
 import DetailedEntryDialog, { EntrySavePayload } from "./DetailedEntryDialog";
 import { useExpenseManagerStore } from "@/hooks/useExpenseManagerStore";
-import { debtBalances, debtTotals } from "@/lib/utils/debt";
+import { cashFlow, debtBalances, debtTotals } from "@/lib/utils/debt";
+import { exposureTrend } from "@/lib/utils/udhaarStats";
 
 interface ExpensesStatsProps {
     entries: IExpenseEntry[];
@@ -20,77 +22,74 @@ interface ExpensesStatsProps {
     onAddCard: (card: Omit<ICard, "id">) => void;
 }
 
-const monthKey = (d: string) => d.slice(0, 7);
+type Delta = { percent: number; direction: "up" | "down" };
+// nothing to compare against (no data, or nothing last month): 0%, shown as a neutral grey chip
+const FLAT: Delta = { percent: 0, direction: "up" };
 
+const monthKey = (d: string) => d.slice(0, 7);
+// LOCAL month. toISOString() is UTC: in the first hours of the 1st in Pakistan it would still say last month.
+const localMonthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 const shiftMonth = (key: string, offset: number) => {
     const [y, m] = key.split("-").map(Number);
-    const d = new Date(y, m - 1 + offset, 1);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    return localMonthKey(new Date(y, m - 1 + offset, 1));
 };
 
-function monthlyDelta(entries: IExpenseEntry[] = [], kind: EntryKind | "net") {
-    if (!entries || entries.length === 0) {
-        return { percent: 0, direction: "up" as const };
-    }
+/** This month vs last month, as a % and an up/down direction. */
+function monthlyDelta(entries: IExpenseEntry[], kind: "income" | "expense"): Delta {
+    if (entries.length === 0) return FLAT;
 
-    const now = monthKey(new Date().toISOString());
+    const now = localMonthKey(new Date());
     const prev = shiftMonth(now, -1);
-
     const totalFor = (key: string) =>
-        kind === "net"
-            ? entries.filter((e) => e.kind === "income" && monthKey(e.date) === key).reduce((s, e) => s + e.amount, 0) -
-            entries.filter((e) => e.kind === "expense" && monthKey(e.date) === key).reduce((s, e) => s + e.amount, 0)
-            : entries.filter((e) => e.kind === kind && monthKey(e.date) === key).reduce((s, e) => s + e.amount, 0);
+        entries.filter((e) => e.kind === kind && monthKey(e.date) === key).reduce((s, e) => s + e.amount, 0);
 
     const current = totalFor(now);
     const previous = totalFor(prev);
-
-    if (previous === 0) {
-        return { percent: 0, direction: "up" as const };
-    }
+    if (previous === 0) return FLAT;
 
     return {
         percent: Math.round((Math.abs(current - previous) / Math.abs(previous)) * 100),
-        direction: (current >= previous ? "up" : "down") as "up" | "down",
+        direction: current >= previous ? "up" : "down",
     };
 }
-
 
 export default function ExpensesStats({ entries = [], categories = [], cards = [], onViewKind, onSaved, onAddCard }: ExpensesStatsProps) {
     const store = useExpenseManagerStore();
     const [dialogKind, setDialogKind] = useState<EntryKind | null>(null);
     const [cardDialogOpen, setCardDialogOpen] = useState(false);
 
-
-    const totalIncome = entries
-        .filter((e) => e.kind === "income")
-        .reduce((s, e) => s + e.amount, 0);
-
-    const totalExpenses = entries
-        .filter((e) => e.kind === "expense")
-        .reduce((s, e) => s + e.amount, 0);
-
-    // const totalDebt = entries
-    //     .filter((e) => e.kind === "debt" && !e.isSettled)
-    //     .reduce((s, e) => s + e.amount, 0);
+    const totalIncome = entries.filter((e) => e.kind === "income").reduce((s, e) => s + e.amount, 0);
+    const totalExpenses = entries.filter((e) => e.kind === "expense").reduce((s, e) => s + e.amount, 0);
 
     const { youWillGet, youWillGive } = debtTotals(debtBalances(entries));
     const totalDebt = Math.abs(youWillGet - youWillGive); // net udhaar
+    const cardsBalance = cards.reduce((s, c) => s + c.balance, 0);
 
-    // const balance = totalIncome - totalExpenses;
+    // The card shows a BALANCE, so its trend compares the balance now with the balance at the start of
+    // this month (= end of last month): today's balance minus this month's cash flow on cards.
+    const monthStart = `${localMonthKey(new Date())}-01`;
+    const flowThisMonth = entries
+        .filter((e) => e.cardId && e.kind !== "debt" && e.date.slice(0, 10) >= monthStart)
+        .reduce((s, e) => s + cashFlow(e) * e.amount, 0);
+    const startBalance = cardsBalance - flowThisMonth;
+    const bal: Delta =
+        startBalance === 0
+            ? FLAT
+            : {
+                percent: Math.round((Math.abs(flowThisMonth) / Math.abs(startBalance)) * 100),
+                direction: flowThisMonth >= 0 ? "up" : "down",
+            };
 
-    const bal = monthlyDelta(entries, "net");
     const inc = monthlyDelta(entries, "income");
     const exp = monthlyDelta(entries, "expense");
-    const debt = monthlyDelta(entries, "debt");
+    const debt = exposureTrend(entries); // same measure as the card's value: net udhaar, now vs end of last month
 
-    const cardsBalance = cards.reduce((s, c) => s + c.balance, 0);
+    const atMaxCards = cards.length >= MAX_CARDS;
 
     const items: (IExpenseStatItem & { filterKind: EntryKind | "all"; ctaLabel?: string })[] = [
         {
             id: "cardBalance",
             title: "Total Cards Balance",
-            // value: `PKR ${balance.toLocaleString("en-PK")}`,
             value: `PKR ${cardsBalance.toLocaleString("en-PK")}`,
             trendDirection: bal.direction,
             trendPercent: bal.percent,
@@ -135,35 +134,26 @@ export default function ExpensesStats({ entries = [], categories = [], cards = [
             trendLabel: "vs last month",
             icon: CircleDollarSign,
             chip: "red",
-            isPositive: debt.direction === "down",
+            isPositive: debt.direction === "down", // owing / being owed less is the good direction
             filterKind: "debt",
             ctaLabel: KHATA_LABELS.debt.verb
         },
     ];
 
-
     return (
         <>
             <div className="grid grid-cols-1 gap-brand-12 sm:grid-cols-2 lg:grid-cols-4">
                 {items.map((item) => item.id === "cardBalance" ? (
-                    <div key={item.id} className="relative group">
-                        <ExpenseStatCard
-                            item={item}
-                            onView={() => onViewKind("all")}
-                            onExport={() => exportEntriesToCsv(entries, categories, "all-export.csv")}
-                            ctaLabel="Add Card"
-                            onCtaClick={() => setCardDialogOpen(true)}
-                        />
-                        <button
-                            onClick={() => setCardDialogOpen(true)}
-                            disabled={cards.length >= MAX_CARDS}
-                            title={cards.length >= MAX_CARDS ? `Max ${MAX_CARDS} cards` : undefined}
-                            className="absolute bottom-3.5 right-brand-12 rounded-brand-8 bg-page-bg px-2 py-1.5 para-tiny font-medium text-primary hover:bg-primary default-transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                            + Add Card
-                            {/* <Pencil size={14} /> */}
-                        </button>
-                    </div>
+                    <ExpenseStatCard
+                        key={item.id}
+                        item={item}
+                        onView={() => onViewKind("all")}
+                        onExport={() => exportEntriesToCsv(entries, categories, "all-export.csv")}
+                        ctaLabel="Add Card"
+                        onCtaClick={() => setCardDialogOpen(true)}
+                        ctaDisabled={atMaxCards}
+                        ctaTitle={atMaxCards ? `Max ${MAX_CARDS} cards` : undefined}
+                    />
                 ) : (
                     <ExpenseStatCard
                         key={item.id}

@@ -1,35 +1,32 @@
+// dashboard\components\user-dashboard\expenseManager\udhaarKhata\DebtActivityChart.tsx
+
 "use client";
 import { useMemo, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 import { ChevronDown, BarChart3 } from "lucide-react";
 import { IExpenseEntry } from "@/types/expenseManagerTy";
-import { buildDebtTrend, weekKey } from "@/lib/utils/trend";
+import { buildDebtCashTrend, weekKey } from "@/lib/utils/trend";
 
 type Granularity = "day" | "week" | "month";
+
+// "YYYY-MM-DD" as a LOCAL date (new Date("YYYY-MM-DD") is midnight UTC and can show the previous day)
+const parseLocal = (s: string) => {
+    const [y, m, d] = s.slice(0, 10).split("-").map(Number);
+    return new Date(y, m - 1, d);
+};
 
 function formatTick(label: string, g: Granularity) {
     if (g === "month") {
         const [y, m] = label.split("-");
-        return new Date(Number(y), Number(m) - 1).toLocaleDateString("en-GB", {
-            month: "short"
-        });
+        return new Date(Number(y), Number(m) - 1).toLocaleDateString("en-GB", { month: "short" });
     }
-    if (g === "week") {
-        return label;
-    }
-    return new Date(label).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short"
-    });
+    if (g === "week") return label.split("-")[1] ?? label; // "2026-W45" -> "W45"
+    return parseLocal(label).toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
 }
 
 function formatAmount(v: number) {
-    if (v >= 1_000_000) {
-        return `${(v / 1_000_000).toFixed(1)}M`;
-    }
-    if (v >= 1000) {
-        return `${(v / 1000).toFixed(0)}K`;
-    }
+    if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
+    if (v >= 1000) return `${(v / 1000).toFixed(0)}K`;
     return String(v);
 }
 
@@ -37,15 +34,15 @@ export default function DebtActivityChart({ entries }: { entries: IExpenseEntry[
     const [granularity, setGranularity] = useState<Granularity>("week");
 
     const data = useMemo(() => {
-        if (granularity === "day") return buildDebtTrend(entries, (d) => d.slice(0, 10), 7);
-        if (granularity === "week") return buildDebtTrend(entries, weekKey, 8);
-        return buildDebtTrend(entries, (d) => d.slice(0, 7), 6);
+        if (granularity === "day") return buildDebtCashTrend(entries, (d) => d.slice(0, 10), 7);
+        if (granularity === "week") return buildDebtCashTrend(entries, weekKey, 8);
+        return buildDebtCashTrend(entries, (d) => d.slice(0, 7), 6);
     }, [entries, granularity]);
 
     if (data.length === 0) {
         return (
             <div className="flex h-full min-h-[255px] flex-col rounded-brand-16 border border-border-clr bg-white p-brand-12">
-                <div><h3 className="para-small font-semibold text-text-dark">Udhaar Activity</h3><p className="para-tiny text-text-secondary-muter">Liya vs Diya</p></div>
+                <div><h3 className="para-small font-semibold text-text-dark">Udhaar Activity</h3><p className="para-tiny text-text-secondary-muter">Diya (Gave) vs Liya (Got)</p></div>
                 <div className="flex flex-1 items-center justify-center">
                     <div className="text-center">
                         <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-page-bg"><BarChart3 size={18} className="text-text-secondary-muter" /></div>
@@ -60,10 +57,8 @@ export default function DebtActivityChart({ entries }: { entries: IExpenseEntry[
         <div className="flex h-full min-h-0 flex-col rounded-brand-16 border border-border-clr bg-white p-brand-12">
             <div className="flex items-center justify-between gap-3">
                 <div>
-                    <h3 className="para-small font-semibold text-text-dark">
-                        Udhaar Activity
-                    </h3>
-                    <p className="para-tiny text-text-secondary-muter">Liya vs Diya</p>
+                    <h3 className="para-small font-semibold text-text-dark">Udhaar Activity</h3>
+                    <p className="para-tiny text-text-secondary-muter">Diya (Gave) vs Liya (Got)</p>
                 </div>
 
                 <div className="relative">
@@ -76,27 +71,14 @@ export default function DebtActivityChart({ entries }: { entries: IExpenseEntry[
                         <option value="week">Weekly</option>
                         <option value="month">Monthly</option>
                     </select>
-
-                    <ChevronDown
-                        size={11}
-                        className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-text-secondary-muter"
-                    />
+                    <ChevronDown size={11} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-text-secondary-muter" />
                 </div>
             </div>
 
-            {/* chart */}
             <div className="mt-2 flex-1">
                 <ResponsiveContainer width="100%" height={200}>
-                    <BarChart
-                        data={data}
-                        margin={{ top: 8, right: 4, left: -20, bottom: 0 }}
-                        barGap={3}
-                    >
-                        <CartesianGrid
-                            vertical={false}
-                            strokeDasharray="3 3"
-                            stroke="var(--border-clr)"
-                        />
+                    <BarChart data={data} margin={{ top: 8, right: 4, left: -20, bottom: 0 }} barGap={3}>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--border-clr)" />
                         <XAxis
                             dataKey="label"
                             tickFormatter={(v) => formatTick(v, granularity)}
@@ -116,49 +98,24 @@ export default function DebtActivityChart({ entries }: { entries: IExpenseEntry[
                             cursor={{ fill: "var(--page-bg-clr)" }}
                             formatter={(v, name) => [
                                 `PKR ${Number(v ?? 0).toLocaleString("en-PK")}`,
-                                name === "liya" ? "Udhaar Liya" : "Udhaar Diya"
+                                name === "gave" ? "Udhaar Diya (Gave)" : "Udhaar Liya (Got)"
                             ]}
-                            contentStyle={{
-                                borderRadius: 10,
-                                border: "1px solid var(--border-clr)",
-                                fontSize: 12
-                            }}
+                            contentStyle={{ borderRadius: 10, border: "1px solid var(--border-clr)", fontSize: 12 }}
                         />
-                        <Bar
-                            dataKey="liya"
-                            // fill="var(--status-info)"
-                            fill="var(--status-success)"
-                            radius={[4, 4, 0, 0]}
-                            maxBarSize={24}
-                            name="liya"
-                        />
-                        <Bar
-                            dataKey="diya"
-                            fill="var(--status-danger)"
-                            radius={[4, 4, 0, 0]}
-                            maxBarSize={24}
-                            name="diya"
-                        />
+                        {/* gave = red, got = green */}
+                        <Bar dataKey="gave" fill="var(--status-danger)" radius={[4, 4, 0, 0]} maxBarSize={24} name="gave" />
+                        <Bar dataKey="got" fill="var(--status-success)" radius={[4, 4, 0, 0]} maxBarSize={24} name="got" />
                     </BarChart>
                 </ResponsiveContainer>
             </div>
             <div className="flex justify-center gap-brand-12 border-t border-border-clr/85 pt-brand-8">
-                {/* legend dot */}
                 <span className="flex items-center gap-1.5 para-tiny font-medium text-text-secondary-muted">
-                    <span
-                        className="h-1.5 w-1.5 rounded-full"
-                        // style={{ backgroundColor: "var(--status-info)" }}
-                        style={{ backgroundColor: "var(--status-success)" }}
-                    />
-                    Udhaar Liya
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "var(--status-danger)" }} />
+                    Udhaar Diya (Gave)
                 </span>
-
                 <span className="flex items-center gap-1.5 para-tiny font-medium text-text-secondary-muted">
-                    <span
-                        className="h-1.5 w-1.5 rounded-full"
-                        style={{ backgroundColor: "var(--status-danger)" }}
-                    />
-                    Udhaar Diya
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "var(--status-success)" }} />
+                    Udhaar Liya (Got)
                 </span>
             </div>
         </div>

@@ -45,3 +45,9 @@ export function udhaarSummary(entries: IExpenseEntry[], now = new Date()): Udhaa
         settled: change(current.settled, previous.settled),
     };
 }
+
+/** Trend of the NET udhaar exposure |get - give|: now vs the end of last month (Daily's "Total udhaar" card). */
+export function exposureTrend(entries: IExpenseEntry[], now = new Date()): Trend {
+    const lastMonthEnd = ymd(new Date(now.getFullYear(), now.getMonth(), 0));
+    return change(Math.abs(snapshot(entries).net), Math.abs(snapshot(entries, lastMonthEnd).net));
+}

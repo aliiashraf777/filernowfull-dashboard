@@ -8,10 +8,10 @@ import { IExpenseStatItem, StatChipVariant } from "@/types/expenseManagerTy";
 
 // Same look as the mobile cards and the Party tiles: a very light tint, a thin 25% border, white pills inside.
 const cardTone: Record<StatChipVariant, string> = {
-  green: "bg-success-bg border-chip-green/25",
-  blue: "bg-info-bg border-chip-blue/25",
-  purple: "bg-chip-purple-bg/40 border-chip-purple/25",
-  red: "bg-danger-bg border-chip-red/25",
+  green: "bg-success-bg/80 border-chip-green/20",
+  blue: "bg-info-bg/80 border-chip-blue/20",
+  purple: "bg-chip-purple-bg/40 border-chip-purple/20",
+  red: "bg-danger-bg/80 border-chip-red/20",
 };
 
 const iconTone: Record<StatChipVariant, string> = {
@@ -31,9 +31,13 @@ interface ExpenseStatCardProps {
   ctaLabel?: string;
   onCtaClick?: () => void;
   ctaVariant?: StatCtaVariant;
+  /** Disables the add action (pencil and button), e.g. when a limit is reached. */
+  ctaDisabled?: boolean;
+  /** Tooltip explaining why it is disabled. */
+  ctaTitle?: string;
 }
 
-export default function ExpenseStatCard({ item, onView, onExport, ctaLabel, onCtaClick, ctaVariant = "both" }: ExpenseStatCardProps) {
+export default function ExpenseStatCard({ item, onView, onExport, ctaLabel, onCtaClick, ctaVariant = "both", ctaDisabled = false, ctaTitle }: ExpenseStatCardProps) {
   const Icon = item.icon;
   // 0% = no change (or nothing to compare against): neutral grey, never green/red
   const flat = item.trendPercent === 0;
@@ -106,8 +110,10 @@ export default function ExpenseStatCard({ item, onView, onExport, ctaLabel, onCt
             <button
               type="button"
               aria-label={ctaLabel ?? "Add entry"}
+              disabled={ctaDisabled}
+              title={ctaTitle}
               onClick={(e) => { e.stopPropagation(); onCtaClick?.(); }}
-              className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-white text-primary shadow-card default-transition hover:bg-primary hover:text-white"
+              className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-white text-primary shadow-card default-transition enabled:hover:bg-primary enabled:hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Pencil size={13} />
             </button>
@@ -130,8 +136,11 @@ export default function ExpenseStatCard({ item, onView, onExport, ctaLabel, onCt
 
           {showButton && (
             <button
+              type="button"
+              disabled={ctaDisabled}
+              title={ctaTitle}
               onClick={(e) => { e.stopPropagation(); onCtaClick?.(); }}
-              className="self-end rounded-brand-8 bg-white px-2 py-1.5 para-tiny font-medium text-primary default-transition hover:bg-primary hover:text-white"
+              className="self-end rounded-brand-8 bg-white px-2 py-1.5 para-tiny font-medium text-primary default-transition enabled:hover:bg-primary enabled:hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
             >
               + {ctaLabel}
             </button>

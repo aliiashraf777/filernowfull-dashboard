@@ -8,6 +8,7 @@ import { cn } from "@/lib/cn";
 import { useExpenseManagerStore } from "@/hooks/useExpenseManagerStore";
 import { buildBackup, parseBackup } from "@/lib/utils/khataBackup";
 import { downloadBlob } from "@/lib/utils/exportKit";
+import BackupGuideDialog from "./BackupGuideDialog";
 
 export default function DataModeToggler() {
     const store = useExpenseManagerStore();
@@ -98,6 +99,8 @@ export default function DataModeToggler() {
                             if (file) void restore(file);
                         }}
                     />
+
+                    <BackupGuideDialog />
                 </>
             )}
         </div>
